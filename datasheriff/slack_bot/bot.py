@@ -68,7 +68,10 @@ def handle_app_mention(event: dict, say) -> None:  # type: ignore[no-untyped-def
 
     placeholder = say(channel=channel, thread_ts=thread_ts, text="🤠 Investigating...")
 
-    response = _run_agent_sync(user_text)
+    try:
+        response = _run_agent_sync(user_text)
+    except Exception as exc:  # noqa: BLE001
+        response = f"I hit an internal error while processing that request: {exc}"
     blocks = format_response_blocks(response)
 
     app.client.chat_update(
@@ -82,7 +85,7 @@ def handle_app_mention(event: dict, say) -> None:  # type: ignore[no-untyped-def
 @app.event("message")
 def handle_dm(event: dict, say) -> None:  # type: ignore[no-untyped-def]
     """Handle direct messages sent to the bot."""
-    if event.get("channel_type") != "im":
+    if event.get("channel_type") not in {"im", "app_home"}:
         return
     if event.get("subtype") is not None:
         return
@@ -96,7 +99,10 @@ def handle_dm(event: dict, say) -> None:  # type: ignore[no-untyped-def]
 
     placeholder = say(channel=channel, thread_ts=thread_ts, text="🤠 Investigating...")
 
-    response = _run_agent_sync(user_text)
+    try:
+        response = _run_agent_sync(user_text)
+    except Exception as exc:  # noqa: BLE001
+        response = f"I hit an internal error while processing that request: {exc}"
     blocks = format_response_blocks(response)
 
     app.client.chat_update(
