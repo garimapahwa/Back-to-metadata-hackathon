@@ -1,0 +1,1 @@
+"""DataSheriff MCP server package."""

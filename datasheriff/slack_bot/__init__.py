@@ -1,0 +1,1 @@
+"""DataSheriff Slack integration package."""
