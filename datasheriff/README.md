@@ -117,6 +117,44 @@ python -m slack_bot.bot
 
 Slack Socket Mode only requires `SLACK_BOT_TOKEN` and `SLACK_APP_TOKEN`. Set `SLACK_SIGNING_SECRET` too if you also plan to expose HTTP event endpoints.
 
+## Shared Slack + Excel Knowledge Base
+
+You can make DataSheriff usable by everyone in your Slack workspace and let non-engineers maintain answers in a shared Excel file.
+
+### 1) Make Slack app usable by everyone
+
+- Install the Slack app to the full workspace (not just one user).
+- Add the bot to channels where users ask questions.
+- Keep `app_mention` enabled so anyone in those channels can query via mentions.
+- Keep DM access enabled (`message.im`) so anyone can ask in direct messages.
+
+### 2) Configure Excel-backed answers
+
+In `.env`, set:
+
+- `EXCEL_KB_PATH`: absolute path to your shared `.xlsx` file
+- `EXCEL_KB_SHEET`: worksheet name (default `Sheet1`)
+- `EXCEL_KB_QUESTION_COLUMN`: column containing user question patterns
+- `EXCEL_KB_ANSWER_COLUMN`: column containing answers
+- `EXCEL_KB_KEYWORDS_COLUMN`: optional comma-separated keywords
+
+Expected sheet columns (header row):
+
+- `question`
+- `answer`
+- `keywords` (optional)
+
+When users edit and save the Excel file, DataSheriff automatically reloads it on the next question (no restart needed).
+
+### 3) Example rows
+
+- question: Who owns sales dashboard?
+    answer: Sales Ops owns it. Contact @sales-analytics.
+    keywords: owner,sales,dashboard
+- question: How to request prod access?
+    answer: Submit access request in JIRA with manager approval.
+    keywords: access,production,permission
+
 ## Run with Docker
 
 ```bash
@@ -126,6 +164,60 @@ docker compose up --build
 
 - Backend: http://localhost:8000
 - Web UI: http://localhost:3000
+
+## Deploy for Team Usage
+
+To let everyone in your Slack workspace use the bot, run backend + bot as always-on services on one host (VM, ECS, Railway, Render, or any Docker server).
+
+### 1) Configure production env
+
+- Set all required values in `.env`:
+    - `OPENMETADATA_HOST`
+    - `OPENMETADATA_JWT_TOKEN`
+    - `ANTHROPIC_API_KEY` (or keep fallback mode)
+    - `SLACK_BOT_TOKEN`
+    - `SLACK_APP_TOKEN`
+    - `EXCEL_KB_PATH` (path available on the deployment host)
+
+### 2) Start services
+
+```bash
+cd datasheriff
+docker compose up -d --build datasheriff-backend datasheriff-bot
+```
+
+Optional UI:
+
+```bash
+docker compose up -d --build datasheriff-web
+```
+
+### 3) Verify service health
+
+- API: `GET /health` on port 8000
+- Bot logs:
+
+```bash
+docker logs -f datasheriff-bot
+```
+
+### 4) Make Slack app available to everyone
+
+- Install app to workspace.
+- Enable Event Subscriptions.
+- Subscribe bot events: `app_mention`, `message.im`.
+- Invite bot to team channels.
+
+## Shared Excel in Production
+
+For collaborative editing, keep the Excel file in a shared location that your deployment host can read.
+
+Recommended patterns:
+
+- Shared drive mounted on host (NAS/Drive sync folder)
+- Cloud file share mounted in container/host volume
+
+Point `EXCEL_KB_PATH` to that mounted `.xlsx` file. After users edit and save, bot answers update automatically on the next question.
 
 ## Example Queries
 

@@ -165,6 +165,11 @@ async def _run_fallback_agent(user_message: str, session: ClientSession) -> str:
     lower = text.lower()
     table_hint = _extract_table_hint(text)
 
+    # Prefer shared spreadsheet answers for common operational FAQs.
+    excel_answer = await _call_tool_text(session, "answer_from_excel", {"question": text, "min_score": 0.45})
+    if excel_answer and not excel_answer.startswith("NO_MATCH:") and "Tool 'answer_from_excel' failed" not in excel_answer:
+        return excel_answer
+
     if "untagged" in lower and "pii" in lower:
         result = await _call_tool_text(session, "find_untagged_pii_columns", {})
         return (

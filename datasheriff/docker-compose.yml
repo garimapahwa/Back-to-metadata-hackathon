@@ -12,6 +12,18 @@ services:
       - "8000:8000"
     command: uvicorn server:app --host 0.0.0.0 --port 8000
 
+  datasheriff-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: datasheriff-bot
+    env_file:
+      - .env
+    command: python -m slack_bot.bot
+    restart: unless-stopped
+    depends_on:
+      - datasheriff-backend
+
   datasheriff-web:
     build:
       context: ./web_ui

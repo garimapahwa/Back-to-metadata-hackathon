@@ -18,6 +18,11 @@ class Settings:
     openmetadata_host: str = os.getenv("OPENMETADATA_HOST", "http://localhost:8585")
     openmetadata_jwt_token: str = os.getenv("OPENMETADATA_JWT_TOKEN", "")
     anthropic_api_key: str = os.getenv("ANTHROPIC_API_KEY", "")
+    excel_kb_path: str = os.getenv("EXCEL_KB_PATH", "")
+    excel_kb_sheet: str = os.getenv("EXCEL_KB_SHEET", "Sheet1")
+    excel_kb_question_column: str = os.getenv("EXCEL_KB_QUESTION_COLUMN", "question")
+    excel_kb_answer_column: str = os.getenv("EXCEL_KB_ANSWER_COLUMN", "answer")
+    excel_kb_keywords_column: str = os.getenv("EXCEL_KB_KEYWORDS_COLUMN", "keywords")
     port: int = int(os.getenv("PORT", "8000"))
     environment: str = os.getenv("ENVIRONMENT", "development")
 
