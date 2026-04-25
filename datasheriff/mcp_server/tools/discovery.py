@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
@@ -38,6 +39,13 @@ def _matches_owner(item: dict[str, Any], owner_name: str) -> bool:
         query in candidate
         for candidate in (owner_display, owner_name_value, team_name, str(_asset_fqn(item)).lower())
     )
+
+
+def _normalize_table_fqn(raw: str) -> str:
+    """Extract a table FQN from free-text input when possible."""
+    text = (raw or "").strip().strip("`")
+    match = re.search(r"\b([a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+){2,})\b", text)
+    return match.group(1) if match else text
 
 
 def register_discovery_tools(mcp: FastMCP) -> None:
@@ -79,11 +87,12 @@ def register_discovery_tools(mcp: FastMCP) -> None:
         FQN format: service_name.database_name.schema_name.table_name
         Returns: description, owner, tags, column count, row count, quality score, last updated.
         """
+        normalized_fqn = _normalize_table_fqn(table_fqn)
         try:
-            table = _client().get_table(table_fqn)
+            table = _client().get_table(normalized_fqn)
         except OpenMetadataClientError as exc:
             if "status=404" in str(exc):
-                return f"I couldn't find table '{table_fqn}'. Try search_assets for similar names."
+                return f"I couldn't find table '{normalized_fqn}'. Try search_assets for similar names."
             return f"Failed to fetch table details: {exc}"
 
         columns = table.get("columns") or []
@@ -94,7 +103,7 @@ def register_discovery_tools(mcp: FastMCP) -> None:
 
         return "\n".join(
             [
-                f"Table: {table.get('fullyQualifiedName', table_fqn)}",
+                f"Table: {table.get('fullyQualifiedName', normalized_fqn)}",
                 f"Description: {(table.get('description') or 'No description').strip()}",
                 f"Owner: @{_owner_name(table)}",
                 f"Tags: {', '.join(tag_names) if tag_names else 'none'}",
@@ -111,18 +120,19 @@ def register_discovery_tools(mcp: FastMCP) -> None:
         Get all column-level metadata for a table including names, data types,
         descriptions, tags, and whether columns are flagged as PII.
         """
+        normalized_fqn = _normalize_table_fqn(table_fqn)
         try:
-            table = _client().get_table(table_fqn)
+            table = _client().get_table(normalized_fqn)
         except OpenMetadataClientError as exc:
             if "status=404" in str(exc):
-                return f"I couldn't find table '{table_fqn}'."
+                return f"I couldn't find table '{normalized_fqn}'."
             return f"Failed to load column metadata: {exc}"
 
         columns = table.get("columns") or []
         if not columns:
-            return f"No columns found for table '{table_fqn}'."
+            return f"No columns found for table '{normalized_fqn}'."
 
-        lines = [f"Column metadata for {table.get('fullyQualifiedName', table_fqn)}:"]
+        lines = [f"Column metadata for {table.get('fullyQualifiedName', normalized_fqn)}:"]
         for col in columns:
             tags = col.get("tags") or []
             tag_names = [t.get("tagFQN") or t.get("tag", {}).get("tagFQN") for t in tags]
@@ -171,11 +181,12 @@ def register_discovery_tools(mcp: FastMCP) -> None:
         who owns it, when it was last updated, and its quality health.
         Perfect for quick checks before using a dataset.
         """
+        normalized_fqn = _normalize_table_fqn(table_fqn)
         try:
-            table = _client().get_table(table_fqn)
+            table = _client().get_table(normalized_fqn)
         except OpenMetadataClientError as exc:
             if "status=404" in str(exc):
-                return f"I couldn't find '{table_fqn}'. Try search_assets to discover the exact FQN."
+                return f"I couldn't find '{normalized_fqn}'. Try search_assets to discover the exact FQN."
             return f"Unable to summarize table: {exc}"
 
         description = (table.get("description") or "No description").strip()
@@ -186,7 +197,7 @@ def register_discovery_tools(mcp: FastMCP) -> None:
         quality = profile.get("qualityScore", table.get("quality", "n/a"))
 
         return (
-            f"{table.get('fullyQualifiedName', table_fqn)} is owned by @{owner}. "
+            f"{table.get('fullyQualifiedName', normalized_fqn)} is owned by @{owner}. "
             f"It has {len(columns)} columns and quality score {quality}. "
             f"Last updated at {updated}. Summary: {description[:220]}"
         )
