@@ -136,12 +136,12 @@ class OpenMetadataClient:
     def get_table(self, fqn: str) -> dict[str, Any]:
         """Get table metadata by fully qualified name."""
         encoded = quote(fqn, safe="")
-        return self.get(f"tables/name/{encoded}", params={"fields": "columns,tags,owner,followers,joins"})
+        return self.get(f"tables/name/{encoded}", params={"fields": "columns,tags,followers,joins"})
 
     def get_table_by_id(self, table_id: str) -> dict[str, Any]:
         """Get table metadata by UUID."""
         encoded = quote(table_id, safe="")
-        return self.get(f"tables/{encoded}", params={"fields": "columns,tags,owner,followers,joins"})
+        return self.get(f"tables/{encoded}", params={"fields": "columns,tags,followers,joins"})
 
     def get_lineage(
         self,
@@ -185,7 +185,7 @@ class OpenMetadataClient:
         """List tables with optional database and schema filters."""
         payload = self.get(
             "tables",
-            params={"fields": "owner,tags,columns", "limit": min(limit, 500)},
+            params={"fields": "tags,columns", "limit": min(limit, 500)},
         )
         tables = payload.get("data", [])
 

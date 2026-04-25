@@ -12,35 +12,21 @@ The project is built as a production-quality hackathon stack with strong separat
 | - app_mention / DM    |         | - ChatWindow / InputBar     |
 +-----------+-----------+         +--------------+--------------+
             |                                      |
-            +------------------+-------------------+
-                               |
-                     +---------v---------+
-                     | FastAPI server.py |
                      | /chat /health /tools
                      +---------+---------+
                                |
                      +---------v---------+
                      | Agent (Claude)    |
-                     | agent.run_agent   |
-                     +---------+---------+
-                               |
-                    MCP stdio  |
-                               v
                    +-----------+-----------+
                    | FastMCP server        |
                    | mcp_server/main.py    |
-                   +-----------+-----------+
-                               |
-                     OpenMetadata REST API
                                |
                                v
                     +----------+-----------+
                     | OpenMetadata instance |
                     +-----------------------+
-```
 
 ## Prerequisites
-
 - Python 3.11+
 - Node.js 18+
 - OpenMetadata instance (local or hosted)
@@ -51,8 +37,6 @@ The project is built as a production-quality hackathon stack with strong separat
 
 ```text
 datasheriff/
-├── mcp_server/
-├── agent/
 ├── slack_bot/
 ├── web_ui/
 ├── demo/
@@ -60,7 +44,6 @@ datasheriff/
 ├── .env.example
 ├── docker-compose.yml
 ├── Dockerfile
-└── README.md
 ```
 
 ## Setup
@@ -83,8 +66,6 @@ cp .env.example .env
 ## Get OpenMetadata JWT Token
 
 1. Open your OpenMetadata UI.
-2. Go to your user profile settings.
-3. Create a personal access token (JWT/PAT).
 4. Set it in `.env` as `OPENMETADATA_JWT_TOKEN`.
 
 ## Run Locally
@@ -92,10 +73,6 @@ cp .env.example .env
 ### Backend (FastAPI + MCP tools + Agent)
 
 ```bash
-cd datasheriff
-source .venv/bin/activate
-uvicorn server:app --reload --host 0.0.0.0 --port 8000
-```
 
 ### Frontend (React)
 
@@ -103,15 +80,32 @@ uvicorn server:app --reload --host 0.0.0.0 --port 8000
 cd datasheriff/web_ui
 npm run dev
 ```
-
-- Web app: http://localhost:3000
 - API docs: http://localhost:8000/docs
 
 ### Optional: Slack Bot
 
 ```bash
-cd datasheriff
-source .venv/bin/activate
+
+## Query Public/Remote Databases by URL
+
+You can skip Excel and query a live database directly by sharing its DB URL in the prompt.
+
+Supported URL formats:
+
+- `postgresql://user:password@host:5432/dbname`
+- `mysql+pymysql://user:password@host:3306/dbname`
+- `sqlite:///absolute/path/to/file.db`
+
+Examples:
+
+- `postgresql://user:pass@db.example.com:5432/sales list tables`
+- `mysql+pymysql://user:pass@host:3306/retail describe table orders`
+- `postgresql://user:pass@host:5432/analytics row count for customers`
+
+Notes:
+
+- Only read-only operations are allowed.
+- Keep database credentials restricted to read-only users.
 python -m slack_bot.bot
 ```
 
@@ -218,6 +212,11 @@ Recommended patterns:
 - Cloud file share mounted in container/host volume
 
 Point `EXCEL_KB_PATH` to that mounted `.xlsx` file. After users edit and save, bot answers update automatically on the next question.
+
+Quick start guides:
+
+- Ubuntu VM guide: [deploy/option1_vm_ubuntu.md](deploy/option1_vm_ubuntu.md)
+- VM bootstrap script: [deploy/bootstrap_ubuntu_vm.sh](deploy/bootstrap_ubuntu_vm.sh)
 
 ## Example Queries
 

@@ -7,6 +7,7 @@ from tools.excel_kb import register_excel_kb_tools
 from tools.governance import register_governance_tools
 from tools.lineage import register_lineage_tools
 from tools.observability import register_observability_tools
+from tools.remote_db import register_remote_db_tools
 
 mcp = FastMCP("datasheriff")
 
@@ -15,6 +16,7 @@ register_excel_kb_tools(mcp)
 register_lineage_tools(mcp)
 register_governance_tools(mcp)
 register_observability_tools(mcp)
+register_remote_db_tools(mcp)
 
 
 if __name__ == "__main__":

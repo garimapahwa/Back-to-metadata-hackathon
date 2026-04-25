@@ -125,6 +125,18 @@ def _extract_table_hint(user_message: str) -> str | None:
     return None
 
 
+def _extract_db_url(user_message: str) -> str | None:
+    """Extract a database URL from user input when present."""
+    match = re.search(
+        r"\b((?:postgresql(?:\+psycopg2)?|mysql(?:\+pymysql)?|sqlite)://[^\s`]+)",
+        user_message,
+        flags=re.IGNORECASE,
+    )
+    if not match:
+        return None
+    return match.group(1).strip()
+
+
 def _guess_change_description(user_message: str) -> str:
     """Generate a concise impact-analysis change description from user input."""
     cleaned = " ".join(user_message.strip().split())
@@ -164,6 +176,15 @@ async def _run_fallback_agent(user_message: str, session: ClientSession) -> str:
     text = user_message.strip()
     lower = text.lower()
     table_hint = _extract_table_hint(text)
+    db_url = _extract_db_url(text)
+
+    if db_url:
+        question_without_url = text.replace(db_url, "").strip() or "list tables"
+        return await _call_tool_text(
+            session,
+            "ask_remote_db",
+            {"db_url": db_url, "question": question_without_url},
+        )
 
     # Prefer shared spreadsheet answers for common operational FAQs.
     excel_answer = await _call_tool_text(session, "answer_from_excel", {"question": text, "min_score": 0.45})
