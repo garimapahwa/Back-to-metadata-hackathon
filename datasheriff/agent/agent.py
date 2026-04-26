@@ -20,6 +20,10 @@ load_dotenv()
 
 MODEL_NAME = "claude-sonnet-4-20250514"
 MAX_TOOL_ROUNDS = 8
+DB_URL_PATTERN = re.compile(
+    r"<?((?:postgresql(?:\+psycopg2)?|mysql(?:\+pymysql)?|sqlite)://[^\s`<>]+(?:\|[^>\s]+)?)>?",
+    flags=re.IGNORECASE,
+)
 
 
 def _extract_block_type(block: Any) -> str:
@@ -127,14 +131,21 @@ def _extract_table_hint(user_message: str) -> str | None:
 
 def _extract_db_url(user_message: str) -> str | None:
     """Extract a database URL from user input when present."""
-    match = re.search(
-        r"\b((?:postgresql(?:\+psycopg2)?|mysql(?:\+pymysql)?|sqlite)://[^\s`]+)",
-        user_message,
-        flags=re.IGNORECASE,
-    )
+    match = DB_URL_PATTERN.search(user_message)
     if not match:
         return None
-    return match.group(1).strip()
+
+    value = (match.group(1) or "").strip()
+    if "|" in value:
+        value = value.split("|", 1)[0].strip()
+    if "<" in value:
+        value = value.split("<", 1)[0].strip()
+    return value.rstrip(">),.;\"'")
+
+
+def _strip_db_url_from_text(user_message: str) -> str:
+    """Remove a DB URL (including Slack-style wrappers) from a prompt."""
+    return DB_URL_PATTERN.sub("", user_message, count=1).strip()
 
 
 def _guess_change_description(user_message: str) -> str:
@@ -179,7 +190,7 @@ async def _run_fallback_agent(user_message: str, session: ClientSession) -> str:
     db_url = _extract_db_url(text)
 
     if db_url:
-        question_without_url = text.replace(db_url, "").strip() or "list tables"
+        question_without_url = _strip_db_url_from_text(text) or "list tables"
         return await _call_tool_text(
             session,
             "ask_remote_db",

@@ -21,7 +21,20 @@ _ALLOWED_SCHEMES = {
 
 
 def _sanitize_db_url(db_url: str) -> str:
-    return (db_url or "").strip()
+    value = (db_url or "").strip()
+    if not value:
+        return ""
+
+    if value.startswith("<") and value.endswith(">"):
+        value = value[1:-1].strip()
+
+    if "|" in value:
+        value = value.split("|", 1)[0].strip()
+
+    if "<" in value:
+        value = value.split("<", 1)[0].strip()
+
+    return value.rstrip(">),.;\"'")
 
 
 def _url_scheme(db_url: str) -> str:

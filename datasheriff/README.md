@@ -73,6 +73,10 @@ cp .env.example .env
 ### Backend (FastAPI + MCP tools + Agent)
 
 ```bash
+cd datasheriff
+source .venv/bin/activate
+uvicorn server:app --host 0.0.0.0 --port 8000 --reload
+```
 
 ### Frontend (React)
 
@@ -85,6 +89,45 @@ npm run dev
 ### Optional: Slack Bot
 
 ```bash
+cd datasheriff
+source .venv/bin/activate
+python -m slack_bot.bot
+```
+
+Slack Socket Mode only requires `SLACK_BOT_TOKEN` and `SLACK_APP_TOKEN`. Set `SLACK_SIGNING_SECRET` too if you also plan to expose HTTP event endpoints.
+
+## Presentation Mode (Recommended)
+
+Use this mode for your final demo so setup is stable and repeatable.
+
+### 1) Start everything
+
+```bash
+cd datasheriff
+bash scripts/presentation_start.sh
+```
+
+### 2) Verify processes and logs
+
+```bash
+bash scripts/presentation_status.sh
+```
+
+### 3) Stop everything after demo
+
+```bash
+bash scripts/presentation_stop.sh
+```
+
+### 4-minute live demo script
+
+1. In Neon SQL Editor, run `demo/presentation_seed.sql`.
+2. In Slack DM, send your DB URL once with: `list tables`.
+3. Send follow-ups without URL:
+    - `describe table customers`
+    - `row count for orders`
+    - `show all orders`
+4. Say `clear db` and show context reset.
 
 ## Query Public/Remote Databases by URL
 
@@ -106,10 +149,6 @@ Notes:
 
 - Only read-only operations are allowed.
 - Keep database credentials restricted to read-only users.
-python -m slack_bot.bot
-```
-
-Slack Socket Mode only requires `SLACK_BOT_TOKEN` and `SLACK_APP_TOKEN`. Set `SLACK_SIGNING_SECRET` too if you also plan to expose HTTP event endpoints.
 
 ## Shared Slack + Excel Knowledge Base
 

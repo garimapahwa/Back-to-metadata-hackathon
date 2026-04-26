@@ -30,9 +30,27 @@ app = App(**app_kwargs)
 # Per-DM database URL context so users can send URL once and ask follow-up questions.
 DM_DB_URL_CONTEXT: dict[str, str] = {}
 DB_URL_PATTERN = re.compile(
-    r"\b((?:postgresql(?:\+psycopg2)?|mysql(?:\+pymysql)?|sqlite)://[^\s`]+)",
+    r"\b((?:postgresql(?:\+psycopg2)?|mysql(?:\+pymysql)?|sqlite)://[^\s`<]+)",
     flags=re.IGNORECASE,
 )
+
+
+def _sanitize_db_url_candidate(raw_url: str) -> str:
+    """Normalize DB URLs copied from Slack markup like <url> or <url|label>."""
+    value = (raw_url or "").strip()
+    if not value:
+        return ""
+
+    if value.startswith("<") and value.endswith(">"):
+        value = value[1:-1].strip()
+
+    if "|" in value:
+        value = value.split("|", 1)[0].strip()
+
+    if "<" in value:
+        value = value.split("<", 1)[0].strip()
+
+    return value.rstrip(">),.;\"'")
 
 
 def _strip_mention(text: str) -> str:
@@ -66,7 +84,10 @@ def _run_agent_sync(message: str) -> str:
 def _extract_db_url(text: str) -> str | None:
     """Extract a DB URL from free text when present."""
     match = DB_URL_PATTERN.search(text or "")
-    return match.group(1).strip() if match else None
+    if not match:
+        return None
+    normalized = _sanitize_db_url_candidate(match.group(1))
+    return normalized or None
 
 
 def _apply_dm_db_context(channel: str, user_text: str) -> tuple[str, str | None]:
